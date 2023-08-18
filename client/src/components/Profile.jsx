@@ -8,10 +8,11 @@ const Profile = (props) => {
   const [profile, setProfile] = useState("");
   const [auth] = UseAuth();
   const id = props.profile;
+  const Host = "http://localhost:8000"
   
   const getProfile = async () => {
     try {
-      const res = await axios.get(`https://echoapp.vercel.app/api/auth/profile/${id}`);
+      const res = await axios.get(`${Host}/api/auth/profile/${id}`);
       setProfile(res.data);
     } catch (error) {
       toast.error("Server not responded, contact to service provider");
@@ -27,9 +28,9 @@ const Profile = (props) => {
     <div>
       <div className='h-[90vh] m-5 justify-center shadow-2xl bg-white rounded-lg p-3 overflow-y-auto'>
 
-        <div><img className='rounded-lg w-full bg-blue-500 h-[30vh]' src={`https://echoapp.vercel.app/api/auth/profile-coverPhoto/${id}`} alt={profile.name} /></div>
+        <div><img className='rounded-lg w-full bg-blue-500 h-[30vh]' src={`${Host}/api/auth/profile-coverPhoto/${id}`} alt={profile.name} /></div>
         <div className='flex flex-row m-3'>
-          <div className='w-[20%]'><img className='h-32 w-32 rounded-full' src={`https://echoapp.vercel.app/api/auth/profile-photo/${id}`} alt={profile.name} />
+          <div className='w-[20%]'><img className='h-32 w-32 rounded-full' src={`${Host}/api/auth/profile-photo/${id}`} alt={profile.name} />
           {auth?.user._id === id ?
             (<button className='text-[12px] font-bold'><UpdateProfileModal/>Edit</button>) : ("")
           }

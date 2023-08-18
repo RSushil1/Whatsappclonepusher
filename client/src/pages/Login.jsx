@@ -10,12 +10,13 @@ export default function Login() {
   const [password, SetPassword] = useState("");
   const navigate = useNavigate();
   const [auth, setAuth] = UseAuth();
+  const Host = "http://localhost:8000"
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://echoapp.vercel.app/api/auth/login", {
+      const res = await axios.post(`${Host}/api/auth/login`, {
         email,
         password,
       });

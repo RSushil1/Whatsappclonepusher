@@ -8,6 +8,7 @@ import { UseAuth } from '../../context/Auth';
 export default function ThreeDotView(props) {
   const id = props.id;
   const [auth,setAuth] = UseAuth();
+  const Host = "http://localhost:8000"
 
   const handleViewProfile = ()=>{
     const dataToSend = id;
@@ -17,7 +18,7 @@ export default function ThreeDotView(props) {
 
   const handleDeleteContacts = async () => {
     try {
-      const res = await axios.delete(`https://echoapp.vercel.app/api/auth/contacts/${id}`);
+      const res = await axios.delete(`${Host}/api/auth/contacts/${id}`);
       if (res.data.success) {
         toast.success(res.data.message);
         const updatedContacts = [res.data.contacts];

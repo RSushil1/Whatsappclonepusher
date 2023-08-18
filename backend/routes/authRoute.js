@@ -69,7 +69,7 @@ router.get("/profile-coverPhoto/:uid", profileCoverPhotoController);
 // add chat
 router.post("/chats", requireSignIn, updateChatsController);
 
-// add chat
+// add messages
 router.post("/messages/:chatId", requireSignIn, updateMessagesController);
 
 //get chats

@@ -8,13 +8,14 @@ export default function AddContactModal() {
   const [email, setEmail] = useState();
   const [auth, setAuth] = UseAuth();
   let [isOpen, setIsOpen] = useState(false);
+  const Host = "http://localhost:8000"
 
 
   // form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://echoapp.vercel.app/api/auth/contacts", {
+      const res = await axios.post(`${Host}/api/auth/contacts`, {
         email
       });
       if (res.data.success) {

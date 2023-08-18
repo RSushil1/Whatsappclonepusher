@@ -10,7 +10,8 @@ const Signup = () => {
     const [answer, setAnswer] = useState("");
     const [photo, setPhoto] = useState("");
 
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const Host = "http://localhost:8000"
 
 
     // form function
@@ -23,7 +24,7 @@ const Signup = () => {
             formData.append("password", password);
             formData.append("answer", answer);
             formData.append("photo", photo);
-            const res = await axios.post('https://echoapp.vercel.app/api/auth/signup', formData);
+            const res = await axios.post(`${Host}/api/auth/signup`, formData);
 
             if (res.data.success) {
                 toast.success(res.data.message);

@@ -3,6 +3,7 @@ import { comparePassword, hashPassword } from "./../helpers/authHelper.js";
 import JWT from "jsonwebtoken";
 import fs from "fs";
 import chatModel from "../models/chatModel.js";
+import Pusher from 'pusher'; // Import the Pusher library
 
 
 // register user by signup
@@ -303,7 +304,7 @@ export const getContactsController = async (req, res) => {
 // get chats
 export const getChatsController = async (req, res) => {
   try {
-    const chats = await chatModel.find({ 'withUsers.contactId._id' : { $in: [req.user._id] } });
+    const chats = await chatModel.find({ 'withUsers.contactId._id': { $in: [req.user._id] } });
 
     const formattedChats = chats.map(chat => {
       // const otherUsers = chat.withUsers.filter(userId => userId !== req.user._id);
@@ -370,9 +371,9 @@ export const updateChatsController = async (req, res) => {
 
     // Create a new chat
     const chats = new chatModel({
-        withUsers,
-        messages: [],
-      
+      withUsers,
+      messages: [],
+
     });
 
     const savedChat = await chats.save();
@@ -395,7 +396,7 @@ export const updateChatsController = async (req, res) => {
 export const updateMessagesController = async (req, res) => {
   try {
     const chatId = req.params.chatId;
-    const { sender, content } = req.body;
+    const { recipients, sender, content } = req.body;
 
     const chat = await chatModel.findById(chatId);
     if (!chat) {
@@ -406,6 +407,29 @@ export const updateMessagesController = async (req, res) => {
     chat.messages.push(newMessage);
     await chat.save();
 
+    // Pusher configuration
+    const pusher = new Pusher({
+      appId: process.env.PUSHER_APP_ID,
+      key: process.env.PUSHER_KEY,
+      secret: process.env.PUSHER_SECRET,
+      cluster: process.env.PUSHER_CLUSTER,
+      useTLS: true
+    });
+
+    recipients.forEach(recipient => {
+      const recipientChannel = `private-${recipient}`;
+      // const newRecipients = recipients.filter(r => r !== recipient);
+
+      // Trigger an event on the Pusher channel
+      pusher.trigger(recipientChannel, 'client-receive-message', {
+        // recipients: newRecipients,
+        sender,
+        content,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
+    });
+
+
     res.status(200).json({
       success: true,
       message: "Message added successfully",
@@ -415,7 +439,9 @@ export const updateMessagesController = async (req, res) => {
     res.status(500).json({ error: "Failed to add message" });
   }
 };
-// Add a all messages from a chat
+
+
+// get all messages from a chat
 export const getMessagesController = async (req, res) => {
   try {
     const chatId = req.params.chatId;

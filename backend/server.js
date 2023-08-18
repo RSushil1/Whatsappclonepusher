@@ -1,74 +1,71 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import http from 'http'; // Import the http module
-import { Server } from 'socket.io';
+import http from 'http';
+import Pusher from 'pusher'; // Import the Pusher library
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoute.js";
 import cors from "cors";
 
-
-//configure env
 dotenv.config();
-
-//databse config
 connectDB();
 
-//PORT
 const PORT = process.env.PORT || 8000;
 
-
-//rest object
 const app = express();
-const server = http.createServer(app); // Create HTTP server instance
+const server = http.createServer(app);
 
-
-//middelwares
 app.use(cors({
-    origin: 'http://localhost:3000'
-  }));
-// app.use(express.json());
+  origin: 'http://localhost:3000'
+}));
 
-// Increase payload size limits for JSON and URL-encoded bodies
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// Socket.IO configuration
-const io = new Server(server, {
-    cors: {
-      origin: 'http://localhost:3000',
-      methods: ['GET', 'POST'],
-      allowedHeaders: ['my-custom-header'],
-      credentials: true
-    }
-  }); // Pass the HTTP server instance to the Socket.IO Server
+// Pusher configuration
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID,
+  key: process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET,
+  cluster: process.env.PUSHER_CLUSTER,
+  useTLS: true
+});
 
-  io.on('connection', socket => {
-    const id = socket.handshake.query.id;
-    socket.join(id);
-    
-    socket.on('send-message', ({ recipients, text }) => {
-        recipients.forEach(recipient => {
-            const newRecipients = recipients.filter(r => r !== recipient);
-            newRecipients.push(id);
-            io.to(recipient).emit('receive-message', {
-                recipients: newRecipients,
-                sender: id,
-                content: text,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            });
-        });
+app.post('/pusher/auth', (req, res) => {
+  const socketId = req.body.socket_id;
+  const channel = req.body.channel_name;
+  const auth = pusher.authenticate(socketId, channel);
+  console.log(auth)
+  res.send(auth);
+});
+
+app.post('/send-message', async (req, res) => {
+  try {
+    const { recipients, text } = req.body;
+    console.log(recipients,text)
+
+    recipients.forEach(recipient => {
+      const recipientChannel = `private-${recipient}`;
+      const newRecipients = recipients.filter(r => r !== recipient);
+
+      // Trigger an event on the Pusher channel
+      pusher.trigger(recipientChannel, 'client-receive-message', {
+        recipients: newRecipients,
+        sender: recipient,
+        content: text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
     });
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Failed to send message.' });
+  }
 });
 
 
-
-
-//routes
 app.use("/api/auth", authRoutes);
 
-//run listen
 server.listen(PORT, () => {
-    console.log(`Server Running on ${process.env.DEV_MODE} mode on port ${PORT}`);
+  console.log(`Server Running on ${process.env.DEV_MODE} mode on port ${PORT}`);
 });
-
-

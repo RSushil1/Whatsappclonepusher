@@ -11,6 +11,7 @@ export default function ProfileButton(props) {
     const id = props.id
     const email = props.email
     const navigate = useNavigate();
+    const Host = "http://localhost:8000"
     
 
     const handleViewProfile = ()=>{
@@ -31,7 +32,7 @@ export default function ProfileButton(props) {
         <div>
           <Menu.Button className="h-[9vh] px-3 inline-flex w-full justify-center rounded-md bg-black bg-opacity-20 py-1 text-sm font-medium text-white hover:bg-blue-300 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
           <div className="flex flex-row">
-                    <div ><img className="w-10 h-10 rounded-full" src={`https://echoapp.vercel.app/api/auth/profile-photo/${auth?.user?._id}`} alt="profile" /></div>
+                    <div ><img className="w-10 h-10 rounded-full" src={`${Host}/api/auth/profile-photo/${auth?.user?._id}`} alt="profile" /></div>
                     <div className='ms-3'>Welcome: {name} <br /> ID: {email}</div>
                 </div>
             <ChevronUpIcon

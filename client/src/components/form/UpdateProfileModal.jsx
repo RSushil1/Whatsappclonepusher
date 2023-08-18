@@ -12,7 +12,8 @@ export default function UpdateProfileModal() {
     const [photo, setPhoto] = useState("");
     const [coverPhoto, setCoverPhoto] = useState("");
     const [auth, setAuth] = UseAuth();
-    let [isOpen, setIsOpen] = useState(false)
+    let [isOpen, setIsOpen] = useState(false);
+    const Host = "http://localhost:8000"
 
     function closeModal() {
         setIsOpen(false)
@@ -32,7 +33,7 @@ export default function UpdateProfileModal() {
             formData.append("password", password);
             formData.append("photo", photo);
             formData.append("coverPhoto", coverPhoto);
-            const res = await axios.put('https://echoapp.vercel.app/api/auth/profile', formData);
+            const res = await axios.put(`${Host}/api/auth/profile`, formData);
 
             if (res.data.success) {
                 toast.success(res.data.message);

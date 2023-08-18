@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiVideo } from 'react-icons/fi';
 import { FiPhoneCall } from 'react-icons/fi';
 import { BsEmojiSmile } from 'react-icons/bs';
@@ -14,11 +14,24 @@ const Chatroom = (props) => {
     const [messages, setMessages] = useState([]);
     const [showEmoji, setShowEmoji] = useState(false);
     const chat = props.chatWith;
-    const socket = useSocket();
+    const channel = useSocket();
     const [auth] = UseAuth();
+    const chatDivRef = useRef();
+    const Host = "http://localhost:8000"
+    console.log(channel)
+
+
+    // Function to scroll to the bottom of the chat div
+    const scrollToBottom = () => {
+        chatDivRef.current?.scrollTo(0, chatDivRef.current.scrollHeight);
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     const getMesssages = async () => {
-        const res = await axios.get(`https://echoapp.vercel.app/api/auth/messages/${chat.chatId}`);
+        const res = await axios.get(`${Host}/api/auth/messages/${chat.chatId}`);
         setMessages(res.data.allMessages);
     }
 
@@ -36,54 +49,68 @@ const Chatroom = (props) => {
         setMessageByMe(messageByMe + emoji);
     }
 
+    // Function to handle sending a message
     const handleSend = async (e) => {
         e.preventDefault();
         try {
-            // Emit the message event to the server
-            chat.user ? (
-                socket.emit('send-message', {
-                    recipients: chat.user.map(contact => contact.contactId._id), // Pass the user IDs as recipients
-                    text: messageByMe,
-                })
-            ) : (
-                socket.emit('send-message', {
-                    recipients: chat.group.map(contact => contact.contactId._id), // Pass the group user  IDs as recipients
-                    text: messageByMe,
-                })
-            );
-            await axios.post(`https://echoapp.vercel.app/api/auth/messages/${chat.chatId}`, {
+            if (!messageByMe.trim()) {
+                return; // Don't send empty messages
+            }
+
+            // if (socket) {
+            //     // Emit the message event to Pusher
+            //     const recipientChannelName = chat.user
+            //         ? chat.user.map((contact) => contact.contactId._id)
+            //         : chat.group.map((contact) => contact.contactId._id);
+
+            //     // socket.trigger('client-send-message', {
+            //     //   recipients: [recipientChannelName], // Pass the Pusher channel name as recipient
+            //     //   text: messageByMe,
+            //     // });
+            //     // Send message to pusher
+            //     await axios.post(`${Host}/send-message`, {
+            //         recipients:recipientChannelName, // Pass the Pusher channel name as recipient
+            //         text: messageByMe,
+            //     });
+            // }
+             
+            const recipientChannelid = chat.user
+                    ? chat.user.map((contact) => contact.contactId._id)
+                    : chat.group.map((contact) => contact.contactId._id);
+
+            // Send message to server
+            await axios.post(`${Host}/api/auth/messages/${chat.chatId}`, {
+                recipients: [recipientChannelid],
                 sender: auth?.user._id,
-                content: messageByMe
+                content: messageByMe,
             });
-            setShowEmoji(false)
+
             setMessageByMe('');
+            scrollToBottom();
         } catch (error) {
-            console.log(error);
+            console.error('Error sending message:', error);
+            // Handle error
         }
     };
 
     useEffect(() => {
-        if (socket) {
-            // Join the room when the component mounts
-            socket.emit('joinRoom', { room: chat.chatId });
-
-            // Listen for incoming messages
-            socket.on('receive-message', (message) => {
-                setMessages((prevMessages) => [...prevMessages, message]);
+        if (channel) {
+            // Subscribe to the 'client-receive-message' event from Pusher
+            channel.bind('client-receive-message', (message) => {
+                setMessages(prevMessages => [...prevMessages, message]);
+                console.log(message.content)
+                console.log("sushil")
             });
         }
 
-        // Scroll to the bottom of the chat div when messages are updated
-        const chatDiv = document.getElementById('chatDiv');
-        chatDiv?.scrollTo(0, chatDiv.scrollHeight);
 
-        // Clean up the socket event listeners when the component unmounts
+        // Clean up the Pusher event listeners when the component unmounts
         return () => {
-            if (socket) {
-                socket.off('receive-message');
+            if (channel) {
+                channel.unbind('client-receive-message');
             }
         };
-    }, [socket, chat]);
+    }, [channel, chat]);
 
     return (
         <>
@@ -110,7 +137,7 @@ const Chatroom = (props) => {
                             <div className="flex flex-row">
                                 <div>
                                     {chat.user ?
-                                        (<img className="w-12 h-12 ms-10 md:ms-1 rounded-full" src={`https://echoapp.vercel.app/api/auth/profile-photo/${chat.user.find(user => user.contactId._id !== auth?.user._id).contactId._id}`} alt="person" />) : (
+                                        (<img className="w-12 h-12 ms-10 md:ms-1 rounded-full" src={`${Host}/api/auth/profile-photo/${chat.user.find(user => user.contactId._id !== auth?.user._id).contactId._id}`} alt="person" />) : (
                                             <svg className="w-12 h-12 ms-10 md:ms-1 rounded-full stroke-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 35 27" id="group"><g filter="url(#filter0_d)"><path fill="#000553" d="M9.99881 16.5974H4.73687C4.52273 11.5316 8.96815 11.4346 11.2176 12.0194C10.4566 12.8042 10.088 15.3984 9.99881 16.5974Z"></path><path stroke="#000553" stroke-width=".257" d="M9.99881 16.5974H4.73687C4.52273 11.5316 8.96815 11.4346 11.2176 12.0194C10.4566 12.8042 10.088 15.3984 9.99881 16.5974Z"></path></g><circle cx="16.842" cy="4.543" r="4.495" fill="#FF6B51" filter="url(#filter1_d)"></circle><circle cx="9.136" cy="7.753" r="3.211" fill="#FF6B51" filter="url(#filter2_d)"></circle><circle cx="24.738" cy="7.753" r="3.211" fill="#FF6B51" filter="url(#filter3_d)"></circle><g filter="url(#filter4_d)"><path fill="#000553" d="M22.663 18.1729H10.8611C10.8611 16.5793 11.1772 15.6333 11.6334 14.1792C12.7866 10.943 15.1221 10.0081 15.8256 10.0873H18.1444C22.4014 11.2527 22.9306 15.9632 22.663 18.1729Z"></path><path stroke="#000553" stroke-width=".257" d="M22.663 18.1729H10.8611C10.8611 16.5793 11.1772 15.6333 11.6334 14.1792C12.7866 10.943 15.1221 10.0081 15.8256 10.0873H18.1444C22.4014 11.2527 22.9306 15.9632 22.663 18.1729Z"></path></g><g filter="url(#filter5_d)"><path fill="#000553" d="M24.1902 11.7107C23.4483 11.6544 22.4132 12.0908 22.5022 12.1319C23.0769 12.5393 23.6144 15.669 23.7417 17.2744H29.0362C29.0761 16.8463 28.8564 15.6245 28.6765 14.2858C28.5327 13.2149 28.9574 12.1228 29.1877 11.7107C29.7686 10.6713 30.618 8.66162 30.618 7.27569L30.6844 4.13628C30.2061 3.1663 29.8096 3.73213 29.6712 4.13628C29.6602 4.67894 29.5815 6.06654 29.3557 7.27569C29.0733 8.78713 27.8442 10.365 27.0968 11.0294C26.3494 11.6938 25.3312 11.7972 24.1902 11.7107Z"></path><path stroke="#000553" stroke-width=".257" d="M24.1902 11.7107C23.4483 11.6544 22.4132 12.0908 22.5022 12.1319C23.0769 12.5393 23.6144 15.669 23.7417 17.2744H29.0362C29.0761 16.8463 28.8564 15.6245 28.6765 14.2858C28.5327 13.2149 28.9574 12.1228 29.1877 11.7107C29.7686 10.6713 30.618 8.66162 30.618 7.27569L30.6844 4.13628C30.2061 3.1663 29.8096 3.73213 29.6712 4.13628C29.6602 4.67894 29.5815 6.06654 29.3557 7.27569C29.0733 8.78713 27.8442 10.365 27.0968 11.0294C26.3494 11.6938 25.3312 11.7972 24.1902 11.7107Z"></path></g><defs><filter id="filter0_d" width="14.862" height="13.079" x=".601" y="11.647" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix><feOffset dy="4"></feOffset><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix><feBlend in2="BackgroundImageFix" result="effect1_dropShadow"></feBlend><feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"></feBlend></filter><filter id="filter1_d" width="16.99" height="16.99" x="8.347" y=".048" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix><feOffset dy="4"></feOffset><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix><feBlend in2="BackgroundImageFix" result="effect1_dropShadow"></feBlend><feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"></feBlend></filter><filter id="filter2_d" width="14.421" height="14.421" x="1.925" y="4.543" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix><feOffset dy="4"></feOffset><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix><feBlend in2="BackgroundImageFix" result="effect1_dropShadow"></feBlend><feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"></feBlend></filter><filter id="filter3_d" width="14.421" height="14.421" x="17.527" y="4.543" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix><feOffset dy="4"></feOffset><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix><feBlend in2="BackgroundImageFix" result="effect1_dropShadow"></feBlend><feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"></feBlend></filter><filter id="filter4_d" width="20.116" height="16.347" x="6.733" y="9.954" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix><feOffset dy="4"></feOffset><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix><feBlend in2="BackgroundImageFix" result="effect1_dropShadow"></feBlend><feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"></feBlend></filter><filter id="filter5_d" width="16.445" height="21.93" x="18.368" y="3.472" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood><feColorMatrix in="SourceAlpha" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"></feColorMatrix><feOffset dy="4"></feOffset><feGaussianBlur stdDeviation="2"></feGaussianBlur><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix><feBlend in2="BackgroundImageFix" result="effect1_dropShadow"></feBlend><feBlend in="SourceGraphic" in2="effect1_dropShadow" result="shape"></feBlend></filter></defs></svg>
                                         )
 
