@@ -3,22 +3,20 @@ import { FiVideo } from 'react-icons/fi';
 import { FiPhoneCall } from 'react-icons/fi';
 import { BsEmojiSmile } from 'react-icons/bs';
 import { AiOutlineSend } from 'react-icons/ai';
-import { useSocket } from '../context/SocketProvider';
 import { UseAuth } from '../context/Auth';
 import axios from 'axios';
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
+import Pusher from 'pusher-js'; // Import the Pusher library
 
 const Chatroom = (props) => {
     const [messageByMe, setMessageByMe] = useState('');
     const [messages, setMessages] = useState([]);
     const [showEmoji, setShowEmoji] = useState(false);
     const chat = props.chatWith;
-    const channel = useSocket();
     const [auth] = UseAuth();
     const chatDivRef = useRef();
     const Host = "http://localhost:8000"
-    console.log(channel)
 
 
     // Function to scroll to the bottom of the chat div
@@ -57,30 +55,13 @@ const Chatroom = (props) => {
                 return; // Don't send empty messages
             }
 
-            // if (socket) {
-            //     // Emit the message event to Pusher
-            //     const recipientChannelName = chat.user
-            //         ? chat.user.map((contact) => contact.contactId._id)
-            //         : chat.group.map((contact) => contact.contactId._id);
-
-            //     // socket.trigger('client-send-message', {
-            //     //   recipients: [recipientChannelName], // Pass the Pusher channel name as recipient
-            //     //   text: messageByMe,
-            //     // });
-            //     // Send message to pusher
-            //     await axios.post(`${Host}/send-message`, {
-            //         recipients:recipientChannelName, // Pass the Pusher channel name as recipient
-            //         text: messageByMe,
-            //     });
-            // }
-             
             const recipientChannelid = chat.user
-                    ? chat.user.map((contact) => contact.contactId._id)
-                    : chat.group.map((contact) => contact.contactId._id);
+                ? chat.user.map((contact) => contact.contactId._id)
+                : chat.group.map((contact) => contact.contactId._id);
 
             // Send message to server
             await axios.post(`${Host}/api/auth/messages/${chat.chatId}`, {
-                recipients: [recipientChannelid],
+                recipients: recipientChannelid,
                 sender: auth?.user._id,
                 content: messageByMe,
             });
@@ -93,24 +74,35 @@ const Chatroom = (props) => {
         }
     };
 
-    useEffect(() => {
-        if (channel) {
-            // Subscribe to the 'client-receive-message' event from Pusher
-            channel.bind('client-receive-message', (message) => {
-                setMessages(prevMessages => [...prevMessages, message]);
-                console.log(message.content)
-                console.log("sushil")
-            });
-        }
+    
+  // Initialize Pusher subscription and event listener
+  useEffect(() => {
 
+     // Enable pusher logging - don't include this in production
+     Pusher.logToConsole = true;
 
-        // Clean up the Pusher event listeners when the component unmounts
-        return () => {
-            if (channel) {
-                channel.unbind('client-receive-message');
-            }
-        };
-    }, [channel, chat]);
+    const pusher = new Pusher('8c00edbe6c29c7691cf8', {
+        cluster: 'ap2',
+        channelAuthorization: {
+            endpoint: `${Host}/pusher/auth`
+          },
+      });
+
+    const channel = pusher.subscribe(`private-${chat.chatId}`);
+    channel.bind('client-receive-message', function (data) {
+      // Handle received message here
+      console.log('Received message:', data);
+
+      // Update your messages state with the received message
+      setMessages((prevMessages) => [...prevMessages, data]);
+      scrollToBottom(); // Scroll to the bottom to show the new message
+    });
+
+    return () => {
+      pusher.unsubscribe(`private-${chat.chatId}`);
+    //   pusher.disconnect();
+    };
+  }, [chat.chatId]);
 
     return (
         <>
@@ -166,7 +158,7 @@ const Chatroom = (props) => {
                             <button className='ms-5 h-10 w-10'><FiPhoneCall className=' h-6 w-6' /></button>
                         </div>
                     </div >
-                    <div className='h-[80vh] z-10 p-5 overflow-y-auto align-text-bottom'>
+                    <div className='h-[80vh] z-10 p-5 overflow-y-auto align-text-bottom' ref={chatDivRef}>
                         {messages.map((message, index) => (
                             <div
                                 key={index}

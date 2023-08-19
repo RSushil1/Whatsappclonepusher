@@ -416,8 +416,10 @@ export const updateMessagesController = async (req, res) => {
       useTLS: true
     });
 
-    recipients.forEach(recipient => {
-      const recipientChannel = `private-${recipient}`;
+    console.log(process.env.PUSHER_SECRET)
+
+   
+      const recipientChannel = `private-${chatId}`;
       // const newRecipients = recipients.filter(r => r !== recipient);
 
       // Trigger an event on the Pusher channel
@@ -427,7 +429,6 @@ export const updateMessagesController = async (req, res) => {
         content,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       });
-    });
 
 
     res.status(200).json({

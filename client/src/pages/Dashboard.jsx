@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Chatroom from '../components/Chatroom';
 import Profile from '../components/Profile';
-import SocketProvider from '../context/SocketProvider';
 import { BiArrowBack } from 'react-icons/bi';
 
 const Dashboard = () => {
@@ -29,7 +28,6 @@ const Dashboard = () => {
 
   return (
     <>
-      <SocketProvider>
         <div className='flex flex-row h-screen'>
           <div
             className={`${
@@ -66,7 +64,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-      </SocketProvider>
     </>
   );
 };

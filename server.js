@@ -33,8 +33,7 @@ const pusher = new Pusher({
 app.post('/pusher/auth', (req, res) => {
   const socketId = req.body.socket_id;
   const channel = req.body.channel_name;
-  const auth = pusher.authenticate(socketId, channel);
-  console.log(auth)
+  const auth = pusher.authorizeChannel(socketId, channel);
   res.send(auth);
 });
 
