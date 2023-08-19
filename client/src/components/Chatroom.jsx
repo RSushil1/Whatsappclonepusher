@@ -12,6 +12,7 @@ import Pusher from 'pusher-js'; // Import the Pusher library
 const Chatroom = (props) => {
     const [messageByMe, setMessageByMe] = useState('');
     const [messages, setMessages] = useState([]);
+    const [loadingMessages, setLoadingMessages] = useState(true);
     const [showEmoji, setShowEmoji] = useState(false);
     const chat = props.chatWith;
     const [auth] = UseAuth();
@@ -28,14 +29,20 @@ const Chatroom = (props) => {
         scrollToBottom();
     }, [messages]);
 
-    const getMesssages = async () => {
-        const res = await axios.get(`${Host}/api/auth/messages/${chat.chatId}`);
-        setMessages(res.data.allMessages);
-    }
-
     useEffect(() => {
+        setLoadingMessages(true);
+
         if (chat && chat.chatId) {
-            getMesssages();
+            axios.get(`${Host}/api/auth/messages/${chat.chatId}`)
+                .then((res) => {
+                    setMessages(res.data.allMessages);
+                })
+                .catch((error) => {
+                    console.error("Error fetching messages:", error);
+                })
+                .finally(() => {
+                    setLoadingMessages(false);
+                });
         }
     }, [chat]);
 
@@ -60,38 +67,38 @@ const Chatroom = (props) => {
                 sender: auth?.user._id,
                 content: messageByMe,
             });
-
             setMessageByMe('');
             scrollToBottom();
+            setShowEmoji(false)
         } catch (error) {
             console.error('Error sending message:', error);
         }
     };
 
-    
-  // Initialize Pusher subscription and event listener
-  useEffect(() => {
 
-    const pusher = new Pusher('8c00edbe6c29c7691cf8', {
-        cluster: 'ap2',
-        channelAuthorization: {
-            endpoint: `${Host}/pusher/auth`
-          },
-      });
+    // Initialize Pusher subscription and event listener
+    useEffect(() => {
 
-    const channel = pusher.subscribe(`private-${chat.chatId}`);
-    channel.bind('client-receive-message', function (data) {
+        const pusher = new Pusher('8c00edbe6c29c7691cf8', {
+            cluster: 'ap2',
+            channelAuthorization: {
+                endpoint: `${Host}/pusher/auth`
+            },
+        });
 
-      // Update messages state with the received message
-      setMessages((prevMessages) => [...prevMessages, data]);
-      scrollToBottom(); // Scroll to the bottom to show the new message
-    });
+        const channel = pusher.subscribe(`private-${chat.chatId}`);
+        channel.bind('client-receive-message', function (data) {
 
-    return () => {
-      pusher.unsubscribe(`private-${chat.chatId}`);
-    //   pusher.disconnect();
-    };
-  }, [chat.chatId]);
+            // Update messages state with the received message
+            setMessages((prevMessages) => [...prevMessages, data]);
+            scrollToBottom(); // Scroll to the bottom to show the new message
+        });
+
+        return () => {
+            pusher.unsubscribe(`private-${chat.chatId}`);
+            //   pusher.disconnect();
+        };
+    }, [chat.chatId]);
 
     return (
         <>
@@ -147,23 +154,28 @@ const Chatroom = (props) => {
                             <button className='ms-5 h-10 w-10'><FiPhoneCall className=' h-6 w-6' /></button>
                         </div>
                     </div >
-                    <div className='h-[80vh] z-10 p-5 overflow-y-auto align-text-bottom' ref={chatDivRef}>
-                        {messages.map((message, index) => (
-                            <div
-                                key={index}
-                                className={`flex ${message.sender === auth?.user._id ? 'flex-row-reverse' : 'flex-row'
-                                    } items-start mb-3`}
-                            >
-                                <div
-                                    className={`${message.sender === auth?.user._id ? 'bg-red-300 ml-3' : ' bg-amber-200 mr-3'} ps-3 pt-1 rounded-lg shadow-md max-w-[70%] flex flex-row`}
-                                >
-                                    <p className='text-sm break-words font-serif'>{message.content}</p>
-                                    <p className='text-[10px] m-1 text-black'>{message.timestamp}</p>
+                    <div className='h-[80vh] z-10 p-5 overflow-y-auto align-text-bottom scrollbar-thin scrollbar-thumb-red-700 scrollbar-track-blue-100' ref={chatDivRef}>
+                            {loadingMessages ? (
+                                // Show spinner while loading
+                                <div className="flex justify-center items-center h-full">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500"></div>
                                 </div>
-                            </div>
-                        ))}
-
-
+                            ) : (
+                                messages.map((message, index) => (
+                                    <div
+                                        key={index}
+                                        className={`flex ${message.sender === auth?.user._id ? 'flex-row-reverse' : 'flex-row'
+                                            } items-start mb-3`}
+                                    >
+                                        <div
+                                            className={`${message.sender === auth?.user._id ? 'bg-red-300 ml-3' : ' bg-amber-200 mr-3'} ps-3 pt-1 rounded-lg shadow-md max-w-[70%] flex flex-row`}
+                                        >
+                                            <p className='text-sm break-words font-serif'>{message.content}</p>
+                                            <p className='text-[10px] m-1 text-black'>{message.timestamp}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                     </div>
 
                     <div className='flex flex-row text-white font-semibold p-3 bg-blue-900 z-10 h-[10vh]'>
@@ -172,7 +184,7 @@ const Chatroom = (props) => {
                                 onClick={() => setShowEmoji(!showEmoji)}
                                 className='h-5 w-5'
                             >
-                                <BsEmojiSmile />
+                                <BsEmojiSmile className='h-5 w-5' />
                             </button>
                             {showEmoji && <div className=' -translate-y-[30rem]'>
                                 <Picker data={data} emojiSize={20} emojiButtonSize={28} maxFrequentRows={0} onEmojiSelect={addEmoji} />
