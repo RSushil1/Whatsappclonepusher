@@ -55,13 +55,8 @@ const Chatroom = (props) => {
                 return; // Don't send empty messages
             }
 
-            const recipientChannelid = chat.user
-                ? chat.user.map((contact) => contact.contactId._id)
-                : chat.group.map((contact) => contact.contactId._id);
-
             // Send message to server
             await axios.post(`${Host}/api/auth/messages/${chat.chatId}`, {
-                recipients: recipientChannelid,
                 sender: auth?.user._id,
                 content: messageByMe,
             });
@@ -70,16 +65,12 @@ const Chatroom = (props) => {
             scrollToBottom();
         } catch (error) {
             console.error('Error sending message:', error);
-            // Handle error
         }
     };
 
     
   // Initialize Pusher subscription and event listener
   useEffect(() => {
-
-     // Enable pusher logging - don't include this in production
-     Pusher.logToConsole = true;
 
     const pusher = new Pusher('8c00edbe6c29c7691cf8', {
         cluster: 'ap2',
@@ -90,10 +81,8 @@ const Chatroom = (props) => {
 
     const channel = pusher.subscribe(`private-${chat.chatId}`);
     channel.bind('client-receive-message', function (data) {
-      // Handle received message here
-      console.log('Received message:', data);
 
-      // Update your messages state with the received message
+      // Update messages state with the received message
       setMessages((prevMessages) => [...prevMessages, data]);
       scrollToBottom(); // Scroll to the bottom to show the new message
     });

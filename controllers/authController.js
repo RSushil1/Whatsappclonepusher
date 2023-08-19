@@ -396,7 +396,7 @@ export const updateChatsController = async (req, res) => {
 export const updateMessagesController = async (req, res) => {
   try {
     const chatId = req.params.chatId;
-    const { recipients, sender, content } = req.body;
+    const {sender, content } = req.body;
 
     const chat = await chatModel.findById(chatId);
     if (!chat) {
@@ -416,19 +416,14 @@ export const updateMessagesController = async (req, res) => {
       useTLS: true
     });
 
-    console.log(process.env.PUSHER_SECRET)
+    const recipientsChannel = `private-${chatId}`;
 
-   
-      const recipientChannel = `private-${chatId}`;
-      // const newRecipients = recipients.filter(r => r !== recipient);
-
-      // Trigger an event on the Pusher channel
-      pusher.trigger(recipientChannel, 'client-receive-message', {
-        // recipients: newRecipients,
-        sender,
-        content,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
+    // Trigger an event on the Pusher channel
+    pusher.trigger(recipientsChannel, 'client-receive-message', {
+      sender,
+      content,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    });
 
 
     res.status(200).json({

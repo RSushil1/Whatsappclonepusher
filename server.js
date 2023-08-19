@@ -37,31 +37,6 @@ app.post('/pusher/auth', (req, res) => {
   res.send(auth);
 });
 
-app.post('/send-message', async (req, res) => {
-  try {
-    const { recipients, text } = req.body;
-    console.log(recipients,text)
-
-    recipients.forEach(recipient => {
-      const recipientChannel = `private-${recipient}`;
-      const newRecipients = recipients.filter(r => r !== recipient);
-
-      // Trigger an event on the Pusher channel
-      pusher.trigger(recipientChannel, 'client-receive-message', {
-        recipients: newRecipients,
-        sender: recipient,
-        content: text,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-    });
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: 'Failed to send message.' });
-  }
-});
-
 
 app.use("/api/auth", authRoutes);
 
