@@ -7,7 +7,7 @@ import ProfileButton from './microComponets/ProfileButton';
 import axios from "axios";
 import ThreeDotView from "./microComponets/ThreedotView";
 import { toast } from "react-toastify";
-
+import Pusher from 'pusher-js'; // Import the Pusher library
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
@@ -20,7 +20,7 @@ export default function Sidebar({ handleChatWith, viewProfile }) {
     const [calls, setCalls] = useState([]);
     const [chats, setChats] = useState([]);
     const [chatsLoading, setChatsLoading] = useState(true);
-    const [isUserOnline, setIsUserOnline] = useState(true);
+    const [isUserOnline, setIsUserOnline] = useState([]);
     const [selectedContacts, setSelectedContacts] = useState([{ contactId: { _id: auth?.user?._id, email: auth?.user?.email } }]);
     const Host = "http://localhost:8000"
 
@@ -51,6 +51,31 @@ export default function Sidebar({ handleChatWith, viewProfile }) {
             });
 
     }, [auth])
+
+    useEffect(()=>{
+        const pusher = new Pusher('8c00edbe6c29c7691cf8', {
+            cluster: 'ap2',
+            channelAuthorization: {
+                endpoint: `${Host}/pusher/auth`
+            },
+        });
+
+        const channel = pusher.subscribe("user-status");
+        channel.bind('status-updated', function (data) {
+        if(data.status){
+            console.log(data)
+            setIsUserOnline((prevUser) => [...prevUser, data.user]);
+        }else{
+            isUserOnline.slice(data.user)
+        }
+        });
+        
+        return () => {
+            pusher.unsubscribe("user-status");
+            //   pusher.disconnect();
+        };
+    },[])
+    console.log(isUserOnline)
 
     const handleCheckboxChange = (contactId) => {
         setSelectedContacts((prevSelected) => {

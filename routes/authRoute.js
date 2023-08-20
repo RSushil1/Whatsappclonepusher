@@ -23,10 +23,6 @@ import formidable from "express-formidable";
 const router = express.Router();
 
 
-//routing
-// //REGISTER || METHOD POST
-// router.post("/signup", registerController);
-
 // Route for user registration including photo upload
 router.post(
   '/signup',
