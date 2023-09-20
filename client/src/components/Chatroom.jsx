@@ -8,6 +8,7 @@ import axios from 'axios';
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import Pusher from 'pusher-js'; // Import the Pusher library
+import { toast } from 'react-toastify';
 
 const Chatroom = (props) => {
     const [messageByMe, setMessageByMe] = useState('');
@@ -17,7 +18,7 @@ const Chatroom = (props) => {
     const chat = props.chatWith;
     const [auth] = UseAuth();
     const chatDivRef = useRef();
-    const Host = "http://localhost:8000"
+    const Host = "https://echoapp.cyclic.cloud"
 
 
     // Function to scroll to the bottom of the chat div
@@ -29,22 +30,24 @@ const Chatroom = (props) => {
         scrollToBottom();
     }, [messages]);
 
-    useEffect(() => {
+    const getMessages = async (chatId) => {
         setLoadingMessages(true);
-
+        try {
+            await axios.get(`${Host}/api/auth/messages/${chatId}`)
+            .then((res)=> setMessages(res.data.allMessages))
+        } catch (error) {
+            console.error("Error fetching messages:", error);
+        } finally {
+            setLoadingMessages(false);
+        }
+    };
+    
+    useEffect(() => {
         if (chat && chat.chatId) {
-            axios.get(`${Host}/api/auth/messages/${chat.chatId}`)
-                .then((res) => {
-                    setMessages(res.data.allMessages);
-                })
-                .catch((error) => {
-                    console.error("Error fetching messages:", error);
-                })
-                .finally(() => {
-                    setLoadingMessages(false);
-                });
+            getMessages(chat.chatId);
         }
     }, [chat]);
+    
 
     const addEmoji = (e) => {
         const sym = e.unified.split("_");
@@ -54,26 +57,34 @@ const Chatroom = (props) => {
         setMessageByMe(messageByMe + emoji);
     }
 
-    // Function to handle sending a message
+
     const handleSend = async (e) => {
         e.preventDefault();
         try {
             if (!messageByMe.trim()) {
                 return; // Don't send empty messages
             }
-
+    
             // Send message to server
             await axios.post(`${Host}/api/auth/messages/${chat.chatId}`, {
                 sender: auth?.user._id,
                 content: messageByMe,
             });
+    
             setMessageByMe('');
             scrollToBottom();
-            setShowEmoji(false)
+            setShowEmoji(false);
         } catch (error) {
             console.error('Error sending message:', error);
+        } finally {
+            // Send message to Pusher
+                await axios.post(`${Host}/messages/${chat.chatId}`, {
+                    sender: auth?.user._id,
+                    content: messageByMe,
+                });
         }
     };
+    
 
 
     // Initialize Pusher subscription and event listener
@@ -155,27 +166,27 @@ const Chatroom = (props) => {
                         </div>
                     </div >
                     <div className='h-[80vh] z-10 p-5 overflow-y-auto align-text-bottom scrollbar-thin scrollbar-thumb-red-700 scrollbar-track-blue-100' ref={chatDivRef}>
-                            {loadingMessages ? (
-                                // Show spinner while loading
-                                <div className="flex justify-center items-center h-full">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500"></div>
-                                </div>
-                            ) : (
-                                messages.map((message, index) => (
+                        {loadingMessages ? (
+                            // Show spinner while loading
+                            <div className="flex justify-center items-center h-full">
+                                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-500"></div>
+                            </div>
+                        ) : (
+                            messages.map((message, index) => (
+                                <div
+                                    key={index}
+                                    className={`flex ${message.sender === auth?.user._id ? 'flex-row-reverse' : 'flex-row'
+                                        } items-start mb-3`}
+                                >
                                     <div
-                                        key={index}
-                                        className={`flex ${message.sender === auth?.user._id ? 'flex-row-reverse' : 'flex-row'
-                                            } items-start mb-3`}
+                                        className={`${message.sender === auth?.user._id ? 'bg-red-300 ml-3' : ' bg-amber-200 mr-3'} ps-3 pt-1 rounded-lg shadow-md max-w-[70%] flex flex-row`}
                                     >
-                                        <div
-                                            className={`${message.sender === auth?.user._id ? 'bg-red-300 ml-3' : ' bg-amber-200 mr-3'} ps-3 pt-1 rounded-lg shadow-md max-w-[70%] flex flex-row`}
-                                        >
-                                            <p className='text-sm break-words font-serif'>{message.content}</p>
-                                            <p className='text-[10px] m-1 text-black'>{message.timestamp}</p>
-                                        </div>
+                                        <p className='text-sm break-words font-serif'>{message.content}</p>
+                                        <p className='text-[10px] m-1 text-black'>{message.timestamp}</p>
                                     </div>
-                                ))
-                            )}
+                                </div>
+                            ))
+                        )}
                     </div>
 
                     <div className='flex flex-row text-white font-semibold p-3 bg-blue-900 z-10 h-[10vh]'>

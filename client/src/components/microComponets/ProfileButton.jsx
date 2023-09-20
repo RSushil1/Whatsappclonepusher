@@ -11,7 +11,7 @@ export default function ProfileButton(props) {
     const id = props.id
     const email = props.email
     const navigate = useNavigate();
-    const Host = "http://localhost:8000"
+    const Host = "https://echoapp.cyclic.cloud"
     
 
     const handleViewProfile = ()=>{
@@ -21,7 +21,7 @@ export default function ProfileButton(props) {
     };
 
     const handleLogout = ()=>{
-      localStorage.setItem('whatsapp','');
+      localStorage.setItem('CodeMagic','');
       toast.success("Logout successfully")
       navigate('/')
     }

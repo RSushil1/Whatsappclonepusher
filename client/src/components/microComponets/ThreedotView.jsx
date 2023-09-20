@@ -8,7 +8,7 @@ import { UseAuth } from '../../context/Auth';
 export default function ThreeDotView(props) {
   const id = props.id;
   const [auth,setAuth] = UseAuth();
-  const Host = "http://localhost:8000"
+  const Host = "https://echoapp.cyclic.cloud"
 
   const handleViewProfile = ()=>{
     const dataToSend = id;

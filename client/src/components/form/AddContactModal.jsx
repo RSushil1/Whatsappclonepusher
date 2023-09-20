@@ -8,7 +8,7 @@ export default function AddContactModal() {
   const [email, setEmail] = useState();
   const [auth, setAuth] = UseAuth();
   let [isOpen, setIsOpen] = useState(false);
-  const Host = "http://localhost:8000"
+  const Host = "https://echoapp.cyclic.cloud"
 
 
   // form submit

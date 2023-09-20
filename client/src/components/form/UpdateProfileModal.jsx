@@ -13,7 +13,7 @@ export default function UpdateProfileModal() {
     const [coverPhoto, setCoverPhoto] = useState("");
     const [auth, setAuth] = UseAuth();
     let [isOpen, setIsOpen] = useState(false);
-    const Host = "http://localhost:8000"
+    const Host = "https://echoapp.cyclic.cloud"
 
     function closeModal() {
         setIsOpen(false)

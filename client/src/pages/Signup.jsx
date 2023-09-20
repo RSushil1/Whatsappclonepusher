@@ -11,7 +11,7 @@ const Signup = () => {
     const [photo, setPhoto] = useState("");
 
     const navigate = useNavigate();
-    const Host = "http://localhost:8000"
+    const Host = "https://echoapp.cyclic.cloud"
 
 
     // form function

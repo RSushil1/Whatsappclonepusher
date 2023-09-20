@@ -10,7 +10,7 @@ export default function Login() {
   const [password, SetPassword] = useState("");
   const navigate = useNavigate();
   const [auth, setAuth] = UseAuth();
-  const Host = "http://localhost:8000"
+  const Host = "https://echoapp.cyclic.cloud"
 
 
   const handleSubmit = async (e) => {
@@ -107,6 +107,9 @@ export default function Login() {
             <NavLink to="/signup" className="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
               Sign Up
             </NavLink>
+          </p>
+          <p className="mt-3 text-center text-sm text-gray-500">
+            For Test Purpose login with: a@a.a, b@b.b, c@c.c, d@d.d etc <br />password: 123
           </p>
         </div>
       </div>

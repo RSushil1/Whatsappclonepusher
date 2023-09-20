@@ -3,7 +3,7 @@ import { comparePassword, hashPassword } from "./../helpers/authHelper.js";
 import JWT from "jsonwebtoken";
 import fs from "fs";
 import chatModel from "../models/chatModel.js";
-import Pusher from 'pusher'; // Import the Pusher library
+
 
 
 // register user by signup
@@ -107,20 +107,6 @@ export const loginController = async (req, res) => {
         email: user.email
       },
       token,
-    });
-
-    // Pusher configuration
-    const pusher = new Pusher({
-      appId: process.env.PUSHER_APP_ID,
-      key: process.env.PUSHER_KEY,
-      secret: process.env.PUSHER_SECRET,
-      cluster: process.env.PUSHER_CLUSTER,
-      useTLS: true
-    });
-    
-    pusher.trigger('user-status', 'status-updated', {
-      user: user._id,
-      status: true
     });
 
   } catch (error) {
@@ -421,25 +407,6 @@ export const updateMessagesController = async (req, res) => {
     const newMessage = { sender, content };
     chat.messages.push(newMessage);
     await chat.save();
-
-    // Pusher configuration
-    const pusher = new Pusher({
-      appId: process.env.PUSHER_APP_ID,
-      key: process.env.PUSHER_KEY,
-      secret: process.env.PUSHER_SECRET,
-      cluster: process.env.PUSHER_CLUSTER,
-      useTLS: true
-    });
-
-    const recipientsChannel = `private-${chatId}`;
-
-    // Trigger an event on the Pusher channel
-    pusher.trigger(recipientsChannel, 'client-receive-message', {
-      sender,
-      content,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
-
 
     res.status(200).json({
       success: true,

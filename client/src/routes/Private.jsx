@@ -7,7 +7,7 @@ import Spinner from "../components/microComponets/Spinner";
 const PrivateRoute = () => {
   const [ok, setOk] = useState(false);
   const [auth] = UseAuth();
-  const Host = "http://localhost:8000"
+  const Host = "https://echoapp.cyclic.cloud"
 
   useEffect(() => {
     const authCheck = async () => {

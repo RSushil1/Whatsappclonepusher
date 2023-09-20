@@ -8,12 +8,12 @@ const Profile = (props) => {
   const [profile, setProfile] = useState("");
   const [auth] = UseAuth();
   const id = props.profile;
-  const Host = "http://localhost:8000"
+  const Host = "https://echoapp.cyclic.cloud"
   
   const getProfile = async () => {
     try {
-      const res = await axios.get(`${Host}/api/auth/profile/${id}`);
-      setProfile(res.data);
+      await axios.get(`${Host}/api/auth/profile/${id}`)
+      .then((res)=> setProfile(res.data))
     } catch (error) {
       toast.error("Server not responded, contact to service provider");
     }

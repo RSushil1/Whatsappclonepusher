@@ -7,7 +7,7 @@ import ProfileButton from './microComponets/ProfileButton';
 import axios from "axios";
 import ThreeDotView from "./microComponets/ThreedotView";
 import { toast } from "react-toastify";
-import Pusher from 'pusher-js'; // Import the Pusher library
+// import Pusher from 'pusher-js'; // Import the Pusher library
 
 function classNames(...classes) {
     return classes.filter(Boolean).join(' ')
@@ -20,62 +20,39 @@ export default function Sidebar({ handleChatWith, viewProfile }) {
     const [calls, setCalls] = useState([]);
     const [chats, setChats] = useState([]);
     const [chatsLoading, setChatsLoading] = useState(true);
-    const [isUserOnline, setIsUserOnline] = useState([]);
+    const [isUserOnline, setIsUserOnline] = useState(false);
     const [selectedContacts, setSelectedContacts] = useState([{ contactId: { _id: auth?.user?._id, email: auth?.user?.email } }]);
-    const Host = "http://localhost:8000"
+    const Host = "https://echoapp.cyclic.cloud"
 
-    useEffect(() => {
+    const getContacts = async () => {
         setContactsLoading(true);
-        setChatsLoading(true);
-
-        axios.get(`${Host}/api/auth/contacts`)
-            .then((res) => {
-                setContacts(res.data)
-            })
-            .catch((error) => {
-                console.error("Error fetching contacts", error);
-            })
-            .finally(() => {
-                setContactsLoading(false);
-            });
-
-        axios.get(`${Host}/api/auth/chats`)
-            .then((res) => {
-                setChats(res.data.chats);
-            })
-            .catch((error) => {
-                console.error("Error fetching chats", error);
-            })
-            .finally(() => {
-                setChatsLoading(false);
-            });
-
-    }, [auth])
-
-    useEffect(()=>{
-        const pusher = new Pusher('8c00edbe6c29c7691cf8', {
-            cluster: 'ap2',
-            channelAuthorization: {
-                endpoint: `${Host}/pusher/auth`
-            },
-        });
-
-        const channel = pusher.subscribe("user-status");
-        channel.bind('status-updated', function (data) {
-        if(data.status){
-            console.log(data)
-            setIsUserOnline((prevUser) => [...prevUser, data.user]);
-        }else{
-            isUserOnline.slice(data.user)
+        try {
+            await axios.get(`${Host}/api/auth/contacts`)
+            .then((res)=> setContacts(res.data))
+        } catch (error) {
+            toast.error("Error fetching contacts:check net connectivity or refresh");
+        } finally {
+            setContactsLoading(false);
         }
-        });
-        
-        return () => {
-            pusher.unsubscribe("user-status");
-            //   pusher.disconnect();
-        };
-    },[])
-    console.log(isUserOnline)
+    };
+    
+    const getChats = async () => {
+        setChatsLoading(true);
+        try {
+            await axios.get(`${Host}/api/auth/chats`)
+            .then((res)=> setChats(res.data.chats))
+        } catch (error) {
+            toast.error("Error fetching chats:check net connectivity or refresh");
+        } finally {
+            setChatsLoading(false);
+        }
+    };
+    
+    useEffect(() => {
+        getContacts();
+        getChats();
+    }, [auth]);
+    
 
     const handleCheckboxChange = (contactId) => {
         setSelectedContacts((prevSelected) => {
