@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 import { UseAuth } from '../context/Auth';
 import UpdateProfileModal from './form/UpdateProfileModal';
 
@@ -15,7 +14,7 @@ const Profile = (props) => {
       await axios.get(`${Host}/api/auth/profile/${id}`)
       .then((res)=> setProfile(res.data))
     } catch (error) {
-      toast.error("Server not responded, contact to service provider");
+      console.log("Server not responded, contact to service provider");
     }
   }
 

@@ -8,7 +8,6 @@ import axios from 'axios';
 import data from '@emoji-mart/data'
 import Picker from '@emoji-mart/react'
 import Pusher from 'pusher-js'; // Import the Pusher library
-import { toast } from 'react-toastify';
 
 const Chatroom = (props) => {
     const [messageByMe, setMessageByMe] = useState('');

@@ -27,32 +27,34 @@ export default function Sidebar({ handleChatWith, viewProfile }) {
     const getContacts = async () => {
         setContactsLoading(true);
         try {
-            await axios.get(`${Host}/api/auth/contacts`)
-            .then((res)=> setContacts(res.data))
+            const res = await axios.get(`${Host}/api/auth/contacts`);
+            setContacts(res?.data);
+            setContactsLoading(false);
         } catch (error) {
             toast.error("Error fetching contacts:check net connectivity or refresh");
-        } finally {
-            setContactsLoading(false);
         }
     };
-    
+
     const getChats = async () => {
         setChatsLoading(true);
         try {
-            await axios.get(`${Host}/api/auth/chats`)
-            .then((res)=> setChats(res.data.chats))
+            const res = await axios.get(`${Host}/api/auth/chats`);
+            if (res?.data?.success) {
+                setChats(res.data.chats);
+                setChatsLoading(false);
+            } else {
+                console.log("error fetching chats")
+            }
         } catch (error) {
             toast.error("Error fetching chats:check net connectivity or refresh");
-        } finally {
-            setChatsLoading(false);
         }
     };
-    
+
     useEffect(() => {
         getContacts();
         getChats();
     }, [auth]);
-    
+
 
     const handleCheckboxChange = (contactId) => {
         setSelectedContacts((prevSelected) => {
